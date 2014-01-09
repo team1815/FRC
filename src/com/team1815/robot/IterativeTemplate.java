@@ -5,7 +5,7 @@
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
-package edu.wpi.first.wpilibj.templates;
+package com.team1815.robot;
 
 
 import edu.wpi.first.wpilibj.IterativeRobot;

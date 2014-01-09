@@ -1,6 +1,6 @@
 MIDlet-Name: Robot1
 MIDlet-Version: 1.0.0
 MIDlet-Vendor: FIRST
-MIDlet-1: IterativeTemplate, , edu.wpi.first.wpilibj.templates.IterateTemplate
+MIDlet-1: IterativeTemplate, ,  com.team1815.robot.IterateTemplate
 MicroEdition-Profile: IMP-1.0
 MicroEdition-Configuration: CLDC-1.1
