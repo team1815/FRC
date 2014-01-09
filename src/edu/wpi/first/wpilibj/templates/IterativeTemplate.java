@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.RobotDrive;
 public class IterativeTemplate extends IterativeRobot {
     
     RobotDrive drive = new RobotDrive(1, 2, 3, 4);
+    Joystick driveStick = new Joystick(1);
     
     /**
      * This function is run when the robot is first started up and should be
@@ -42,8 +43,7 @@ public class IterativeTemplate extends IterativeRobot {
      * This function is called periodically during operator control
      */
     public void teleopPeriodic() {
-        //drive.mecanumDrive_Cartesian(ROBOT_TASK_PRIORITY, ROBOT_TASK_PRIORITY, ROBOT_TASK_PRIORITY, ROBOT_TASK_PRIORITY);
-        //drive.tankDrive(driveStick, driveStick);
+        drive.arcadeDrive(driveStick);
     }
     
     /**
