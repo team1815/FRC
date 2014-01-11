@@ -21,9 +21,18 @@ import edu.wpi.first.wpilibj.Timer;
  * directory.
  */
 public class RobotTemplate extends SimpleRobot {
-    RobotDrive drive = new RobotDrive(1, 2);
+    RobotDrive drive = new RobotDrive(1, 3);
     Joystick leftStick = new Joystick(1);
     Joystick rightStick = new Joystick(2);
+    
+    /**
+     * This function is called once.
+     */
+    public void robotInit() {
+        super.robotInit();
+        drive.setInvertedMotor(RobotDrive.MotorType.kRearLeft, true);
+        drive.setInvertedMotor(RobotDrive.MotorType.kRearRight, true);
+    }
     /**
      * This function is called once each time the robot enters autonomous mode.
      */
@@ -39,7 +48,8 @@ public class RobotTemplate extends SimpleRobot {
      */
     public void operatorControl() {
         while (isOperatorControl() && isEnabled()) {
-            drive.tankDrive(leftStick, rightStick); // drive with joysticks
+            //drive.tankDrive(leftStick, rightStick); // drive with joysticks
+            drive.arcadeDrive(leftStick);
             Timer.delay(0.005);
         }
     }
