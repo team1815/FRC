@@ -8,10 +8,14 @@
 package com.team1815.robot;
 
 
+import com.sun.squawk.debugger.Log;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.SimpleRobot;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.camera.AxisCamera;
+import edu.wpi.first.wpilibj.camera.AxisCameraException;
+import edu.wpi.first.wpilibj.image.NIVisionException;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -21,9 +25,10 @@ import edu.wpi.first.wpilibj.Timer;
  * directory.
  */
 public class RobotTemplate extends SimpleRobot {
-    RobotDrive drive = new RobotDrive(1, 3);
+    RobotDrive drive = new RobotDrive(1, 2, 3, 4);
     Joystick leftStick = new Joystick(1);
-    Joystick rightStick = new Joystick(2);
+    AxisCamera camera = AxisCamera.getInstance();
+    //Joystick rightStick = new Joystick(2);
     
     /**
      * This function is called once.
@@ -32,6 +37,8 @@ public class RobotTemplate extends SimpleRobot {
         super.robotInit();
         drive.setInvertedMotor(RobotDrive.MotorType.kRearLeft, true);
         drive.setInvertedMotor(RobotDrive.MotorType.kRearRight, true);
+        drive.setInvertedMotor(RobotDrive.MotorType.kFrontLeft, true);
+        drive.setInvertedMotor(RobotDrive.MotorType.kFrontRight, true);
     }
     /**
      * This function is called once each time the robot enters autonomous mode.
@@ -51,6 +58,16 @@ public class RobotTemplate extends SimpleRobot {
             //drive.tankDrive(leftStick, rightStick); // drive with joysticks
             drive.arcadeDrive(leftStick);
             Timer.delay(0.005);
+            if (leftStick.getTrigger() && camera.freshImage()) {
+                try {
+                    camera.getImage();
+                    Log.log("Took a picture");
+                } catch (AxisCameraException ex) {
+                    ex.printStackTrace();
+                } catch (NIVisionException ex) {
+                    ex.printStackTrace();
+                }
+            }
         }
     }
     
