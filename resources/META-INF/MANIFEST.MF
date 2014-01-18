@@ -1,6 +1,6 @@
 MIDlet-Name: Robot1
 MIDlet-Version: 1.0.0
 MIDlet-Vendor: FIRST
-MIDlet-1: RobotTemplate, ,  com.team1815.robot.RobotTemplate
+MIDlet-1: IterativeBeast1815, ,  com.team1815.robot.IterativeBeast1815
 MicroEdition-Profile: IMP-1.0
 MicroEdition-Configuration: CLDC-1.1
