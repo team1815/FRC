@@ -14,6 +14,7 @@ import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.camera.AxisCamera;
 import edu.wpi.first.wpilibj.camera.AxisCameraException;
 import edu.wpi.first.wpilibj.image.NIVisionException;
@@ -30,19 +31,58 @@ public class IterativeBeast1815 extends IterativeRobot {
     RobotDrive drive = new RobotDrive(1, 2, 3, 4);
     Joystick driveStick = new Joystick(1);
     AxisCamera camera = AxisCamera.getInstance();
-
     
     Compressor compressor = new Compressor(1,1);   //Compressor Relay
     Solenoid fast_shoot1_fwd = new Solenoid(1);      //Fire on Output 1
     Solenoid fast_shoot1_rev = new Solenoid(2);
     Solenoid fast_shoot2_fwd = new Solenoid(3);      //Fire on Output 3
     Solenoid fast_shoot2_rev = new Solenoid(4);
+    Solenoid lim_switch_fwd = new Solenoid(5);
+    Solenoid lim_switch_rev = new Solenoid(6);
+    Solenoid pick_upper_down = new Solenoid(7);
+    Solenoid pick_upper_up = new Solenoid(8);
+    SolenoidToggle pickUpperControl = new SolenoidToggle(pick_upper_up, pick_upper_down);
+    SolenoidToggle limSwitchControl = new SolenoidToggle(lim_switch_fwd, lim_switch_rev);
+    ShooterThread shooterThread;
+    
+    class SolenoidToggle {
+        boolean is_up = true;
+        Timer timer = new Timer();
+        double prevTime = 0;
+        Solenoid fwd, rev;
+        void toggle() {
+            if (timer.get() - prevTime > .5) {
+                fwd.set(is_up);
+                rev.set(!is_up);
+                is_up = !is_up;
+                prevTime = timer.get();
+                Log.log("Successful toggle");
+            } else {
+                Log.log("Unsuccessful toggle" + prevTime + ", " + timer.get());
+            }
+        }
+        void start() {
+            timer.reset();
+            timer.start();
+        }
+        public boolean getIsUp() {
+            return is_up;
+        }
+        public SolenoidToggle(Solenoid fwd, Solenoid rev) {
+            this.fwd = fwd;
+            this.rev = rev;
+        }
+    }
     
     private void stopAllPneumatics() {
         fast_shoot1_fwd.set(false);
         fast_shoot2_fwd.set(false);
         fast_shoot1_rev.set(false);
         fast_shoot2_rev.set(false);
+        pick_upper_down.set(false);
+        pick_upper_up.set(false);
+        lim_switch_fwd.set(false);
+        lim_switch_rev.set(false);
     }
     
     /**
@@ -68,6 +108,8 @@ public class IterativeBeast1815 extends IterativeRobot {
     
     public void teleopInit() {
         compressor.start();
+        pickUpperControl.start();
+        limSwitchControl.start();
     }
 
     /**
@@ -76,38 +118,28 @@ public class IterativeBeast1815 extends IterativeRobot {
     public void teleopPeriodic() {
         drive.arcadeDrive(driveStick, true);
         
-        if (driveStick.getRawButton(8) && camera.freshImage()) {
-            try {
-                camera.getImage();
-                Log.log("Took an image");
-            } catch (AxisCameraException ex) {
-                ex.printStackTrace();
-            } catch (NIVisionException ex) {
-                ex.printStackTrace();
+        if (driveStick.getRawButton(6)) {
+            pickUpperControl.toggle();
+        }
+        if (driveStick.getRawButton(7)) {
+            limSwitchControl.toggle();
+        }
+        if (driveStick.getTrigger()){
+            if (shooterThread == null || !shooterThread.isAlive()) {
+                shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev);
+                shooterThread.start();
+                Log.log("Single shot");
+            } else {
+                Log.log("No single shot.");
             }
         }
         
-        if (driveStick.getButton(Joystick.ButtonType.kNumButton))
-        if (driveStick.getTrigger()){
-            fast_shoot1_fwd.set(true);
-            fast_shoot2_fwd.set(true);
-        }else{
-            fast_shoot1_fwd.set(false);
-            fast_shoot2_fwd.set(false);
-        }
-        
-        if (driveStick.getTop()){
-            fast_shoot1_rev.set(true);
-            fast_shoot2_rev.set(true);
-        }else{
-            fast_shoot1_rev.set(false);
-            fast_shoot2_rev.set(false);
-        }
     }
     
     public void disabledInit() {
         stopAllPneumatics();
         compressor.stop();
+        
     }
     
     /**
