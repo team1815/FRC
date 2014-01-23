@@ -45,6 +45,10 @@ public class IterativeBeast1815 extends IterativeRobot {
     SolenoidToggle limSwitchControl = new SolenoidToggle(lim_switch_fwd, lim_switch_rev);
     ShooterThread shooterThread;
     
+    /**
+     * Simple toggle for a solenoid. Ensures that it it doesn't switch back and forth too quickly
+     * if the button is held down for more than one iteration.
+     */
     class SolenoidToggle {
         boolean is_up = true;
         Timer timer = new Timer();
