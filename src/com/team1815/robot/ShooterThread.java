@@ -10,7 +10,7 @@ import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Timer;
 
 /**
- *
+ * Separate thread, so the shooter can shoot and come back down on its own.
  * @author FRC
  */
 public class ShooterThread extends Thread {
