@@ -10,6 +10,7 @@ package com.team1815.robot;
 
 import com.sun.squawk.debugger.Log;
 import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
@@ -32,6 +33,7 @@ public class IterativeBeast1815 extends IterativeRobot {
     Joystick driveStick = new Joystick(1);
     AxisCamera camera = AxisCamera.getInstance();
     
+    //guys a DoubleSolenoid might've been what we wanted
     Compressor compressor = new Compressor(1,1);   //Compressor Relay
     Solenoid fast_shoot1_fwd = new Solenoid(1);      //Fire on Output 1
     Solenoid fast_shoot1_rev = new Solenoid(2);
@@ -45,6 +47,11 @@ public class IterativeBeast1815 extends IterativeRobot {
     SolenoidToggle limSwitchControl = new SolenoidToggle(lim_switch_fwd, lim_switch_rev);
     ShooterThread shooterThread;
     
+    DigitalInput ball_lim_switch = new DigitalInput(2);
+    
+    private boolean forward_is_pickupper = false;
+    private boolean directionChanged = false;
+    
     /**
      * Simple toggle for a solenoid. Ensures that it it doesn't switch back and forth too quickly
      * if the button is held down for more than one iteration.
@@ -55,7 +62,7 @@ public class IterativeBeast1815 extends IterativeRobot {
         double prevTime = 0;
         Solenoid fwd, rev;
         void toggle() {
-            if (timer.get() - prevTime > .5) {
+            if (timer.get() - prevTime > .5 || timer.get() < prevTime) {
                 fwd.set(is_up);
                 rev.set(!is_up);
                 is_up = !is_up;
@@ -64,6 +71,19 @@ public class IterativeBeast1815 extends IterativeRobot {
             } else {
                 Log.log("Unsuccessful toggle" + prevTime + ", " + timer.get());
             }
+        }
+        
+        void putUpNoMatterWhat() {
+            fwd.set(false);
+            rev.set(true);
+            is_up = true;
+        }
+        
+        double timeSince() {
+            if (timer.get() > prevTime)
+                return timer.get() - prevTime;
+            else
+                return 0;
         }
         void start() {
             timer.reset();
@@ -89,18 +109,24 @@ public class IterativeBeast1815 extends IterativeRobot {
         lim_switch_rev.set(false);
     }
     
+    private void reverseMotors(boolean forward) {
+        drive.setInvertedMotor(RobotDrive.MotorType.kRearLeft, forward);
+        drive.setInvertedMotor(RobotDrive.MotorType.kRearRight, forward);
+        drive.setInvertedMotor(RobotDrive.MotorType.kFrontLeft, forward);
+        drive.setInvertedMotor(RobotDrive.MotorType.kFrontRight, forward);
+    }
+    
     /**
      * This function is run when the robot is first started up and should be
      * used for any initialization code.
      */
     public void robotInit() {
-        drive.setInvertedMotor(RobotDrive.MotorType.kRearLeft, true);
-        drive.setInvertedMotor(RobotDrive.MotorType.kRearRight, true);
-        drive.setInvertedMotor(RobotDrive.MotorType.kFrontLeft, true);
-        drive.setInvertedMotor(RobotDrive.MotorType.kFrontRight, true);
+        reverseMotors(true);
         
         stopAllPneumatics();
         compressor.start();
+        pickUpperControl.start();
+        
     }
 
     /**
@@ -114,16 +140,52 @@ public class IterativeBeast1815 extends IterativeRobot {
         compressor.start();
         pickUpperControl.start();
         limSwitchControl.start();
+        getWatchdog().setEnabled(false); //TODO: true later
     }
 
     /**
      * This function is called periodically during operator control
      */
     public void teleopPeriodic() {
-        drive.arcadeDrive(driveStick, true);
+        //Log.log(compressor.getPressureSwitchValue()? "yes" : "no");
+//        if(compressor.getPressureSwitchValue() && compressor.enabled()){
+//            compressor.stop();
+//            Log.log("Shut off compressor");
+//        }else if (!compressor.getPressureSwitchValue() && !compressor.enabled()){
+//            compressor.start();
+//            Log.log("Turned on comrpessor");
+//        }
+        
+        double forward = driveStick.getY();
+        double right = driveStick.getX() * .5;
+        if (driveStick.getTop()) {
+            forward *= .4;
+            right *= .8;
+        }
+        //only change the direction if the time since the last press was over 
+        if (forward_is_pickupper) {
+            drive.arcadeDrive(forward, right);
+        } else {
+            drive.arcadeDrive(-forward, right);
+        }
+                
+        
         
         if (driveStick.getRawButton(6)) {
             pickUpperControl.toggle();
+        }
+        if (ball_lim_switch.get()) {
+            pickUpperControl.putUpNoMatterWhat();
+            Log.log("Limit switch hit");
+        }
+        
+        if (driveStick.getRawButton(11)) {
+            if (!directionChanged) {
+                forward_is_pickupper = !forward_is_pickupper;
+                directionChanged = true;
+            }
+        } else {
+            directionChanged = false;
         }
         if (driveStick.getRawButton(7)) {
             limSwitchControl.toggle();
