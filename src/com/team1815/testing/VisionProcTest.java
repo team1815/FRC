@@ -14,8 +14,8 @@ public class VisionProcTest {
         RGBImage positiveImage = null;
         RGBImage negativeImage = null;
         try {
-            negativeImage = new RGBImage("C:\\Users\\FRC\\Documents\\VISION_PROC_NEGATIVE.jpg");
-            positiveImage = new RGBImage("C:\\Users\\FRC\\Documents\\VISION_PROC_POSITIVE.jpg");
+            negativeImage = new RGBImage("VISION_PROC_NEGATIVE.jpg");
+            positiveImage = new RGBImage("VISION_PROC_POSITIVE.jpg");
         } catch (NIVisionException ex) {
             ex.printStackTrace();
             System.exit(-1);
