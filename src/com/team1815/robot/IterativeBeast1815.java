@@ -25,6 +25,7 @@ import edu.wpi.first.wpilibj.image.NIVision;
 import edu.wpi.first.wpilibj.image.NIVisionException;
 import edu.wpi.first.wpilibj.image.ParticleAnalysisReport;
 import edu.wpi.first.wpilibj.image.RGBImage;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -103,62 +104,7 @@ public class IterativeBeast1815 extends IterativeRobot {
             this.rev = rev;
         }
     }
-    
-    /**
-     * Highly experimental vision processing code.
-     * ************************************************************************
-     */
-    
-    
 
-    //Camera constants used for distance calculation
-    final int Y_IMAGE_RES = 480;		//X Image resolution in pixels, should be 120, 240 or 480
-    final double VIEW_ANGLE = 49;		//Axis M1013
-    //final double VIEW_ANGLE = 41.7;		//Axis 206 camera
-    //final double VIEW_ANGLE = 37.4;  //Axis M1011 camera
-    final double PI = 3.141592653;
-
-    //Score limits used for target identification
-    final int  RECTANGULARITY_LIMIT = 40;
-    final int ASPECT_RATIO_LIMIT = 55;
-
-    //Score limits used for hot target determination
-    final int TAPE_WIDTH_LIMIT = 50;
-    final int  VERTICAL_SCORE_LIMIT = 50;
-    final int LR_SCORE_LIMIT = 50;
-
-    //Minimum area of particles to be considered
-    final int AREA_MINIMUM = 150;
-
-    //Maximum number of particles to process
-    final int MAX_PARTICLES = 8;
-
-    CriteriaCollection cc;      // the criteria for doing the particle filter operation
-    
-    public class Scores {
-        double rectangularity;
-        double aspectRatioVertical;
-        double aspectRatioHorizontal;
-    }
-    
-    public class TargetReport {
-		int verticalIndex;
-		int horizontalIndex;
-		boolean Hot;
-		double totalScore;
-		double leftScore;
-		double rightScore;
-		double tapeWidthScore;
-		double verticalScore;
-    };
-    /*********************** End highly experimental vision proc  *************/
-    
-    /************ MORE VISION PROC *****************************************/
-    TargetReport target;
-    int verticalTargets[];
-    int horizontalTargets[];
-    int verticalTargetCount, horizontalTargetCount;
-    /*********** END MORE VISION PROC **************************************/
     
     private void stopAllPneumatics() {
         fast_shoot1_fwd.set(false);
@@ -188,12 +134,6 @@ public class IterativeBeast1815 extends IterativeRobot {
         stopAllPneumatics();
         compressor.start();
         pickUpperControl.start();
-        
-        /**** VISION PROC *************************************************/
-        //camera = AxisCamera.getInstance();  // get an instance of the camera
-        cc = new CriteriaCollection();      // create the criteria for the particle filter
-        cc.addCriteria(NIVision.MeasurementType.IMAQ_MT_AREA, AREA_MINIMUM, 65535, false);
-        /****** END VISION PROC *********************************************/
     }
     
     
@@ -227,6 +167,7 @@ public class IterativeBeast1815 extends IterativeRobot {
             //filteredImage.write("/filteredImage.bmp");
 
             //iterate through each particle and score to see if it is a target
+            System.out.println(filteredImage.getNumberParticles());
             Scores scores[] = new Scores[filteredImage.getNumberParticles()];
             horizontalTargetCount = verticalTargetCount = 0;
 
