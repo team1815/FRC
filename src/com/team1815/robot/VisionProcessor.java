@@ -95,7 +95,7 @@ public class VisionProcessor {
         /****** VISION PROC ***********************/
     }
     
-    public void autonomousPeriodic() {
+    public void autonomousPeriodic(RGBImage imageToUse) {
         try {
             /**
              * Do the image capture with the camera and apply the algorithm
@@ -105,7 +105,12 @@ public class VisionProcessor {
              * "testImage.jpg"
              *
              */
-            ColorImage image = camera.getImage();     // comment if using stored images
+            ColorImage image;
+            if (imageToUse == null) {
+                image = camera.getImage();     // comment if using stored images
+            } else {
+                image = imageToUse;
+            }
             //ColorImage image;                           // next 2 lines read image from flash on cRIO
             //image = new RGBImage("/testImage.jpg");		// get the sample image from the cRIO flash
             BinaryImage thresholdImage = image.thresholdHSV(105, 137, 230, 255, 133, 183);   // keep only green objects

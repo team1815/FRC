@@ -18,7 +18,16 @@ public class VisionProcTest {
             positiveImage = new RGBImage("C:\\Users\\FRC\\Documents\\VISION_PROC_POSITIVE.jpg");
         } catch (NIVisionException ex) {
             ex.printStackTrace();
+            System.exit(-1);
         }
         visionProcessor = new VisionProcessor(positiveImage, negativeImage);
+        
+        
+        visionProcessor.robotInit();
+        visionProcessor.autonomousInit();
+        System.out.println("Testing positive image: ");
+        visionProcessor.autonomousPeriodic(positiveImage);
+        System.out.println("Testing negative image: ");
+        visionProcessor.autonomousPeriodic(negativeImage);
     }
 }
