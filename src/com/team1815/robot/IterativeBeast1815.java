@@ -17,6 +17,7 @@ import edu.wpi.first.wpilibj.PWM;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.camera.AxisCamera;
 
 /**
@@ -48,13 +49,18 @@ public class IterativeBeast1815 extends IterativeRobot {
     
     DigitalInput ball_lim_switch = new DigitalInput(2);
     
+    Victor launch_adjuster = new Victor(5);
+    DigitalInput launch_adjuster_lim_switch = new DigitalInput(3);
+    TimedMotor launch_adjuster_timer = new TimedMotor(launch_adjuster);
+    
     private boolean forward_is_pickupper = false;
     private boolean directionChanged = false;
     
-    PWM camera_light1 = new PWM(10);
-    PWM camera_light2 = new PWM(9);
+    PWM camera_light = new PWM(10);
     
     VisionProcessor visionProcessor = new VisionProcessor(camera);
+    
+    boolean our_side_is_hot;
     
     /**
      * Simple toggle for a solenoid. Ensures that it it doesn't switch back and forth too quickly
@@ -100,12 +106,7 @@ public class IterativeBeast1815 extends IterativeRobot {
             this.fwd = fwd;
             this.rev = rev;
         }
-    }
-
-    private void setCameraLights(int amount) {
-        camera_light1.setRaw(amount);
-        camera_light2.setRaw(amount);
-    }
+    }    
     
     private void stopAllPneumatics() {
         fast_shoot1_fwd.set(false);
@@ -142,6 +143,8 @@ public class IterativeBeast1815 extends IterativeRobot {
     public void autonomousInit() {
         compressor.start();
         pickUpperControl.start();
+        camera_light.setRaw(255);
+        visionProcessor.autonomousInit();
     }
 
     /**
@@ -163,7 +166,6 @@ public class IterativeBeast1815 extends IterativeRobot {
      * This function is called periodically during operator control
      */
     public void teleopPeriodic() {
-        setCameraLights(255);
 
         //Log.log(compressor.getPressureSwitchValue()? "yes" : "no");
 //        if(compressor.getPressureSwitchValue() && compressor.enabled()){
@@ -217,10 +219,20 @@ public class IterativeBeast1815 extends IterativeRobot {
                 Log.log("No single shot.");
             }
         }
+        if (driveStick.getRawButton(8)) {
+            launch_adjuster.set(1);
+            //launch_adjuster_timer.go(10, true);
+        } else if (driveStick.getRawButton(9)) {
+            launch_adjuster.set(-1);
+            //launch_adjuster_timer.go(10, false);
+        } else {
+            launch_adjuster.set(0);
+        }
         
     }
     
     public void disabledInit() {
+        camera_light.setRaw(0);
         stopAllPneumatics();
         compressor.stop();
         

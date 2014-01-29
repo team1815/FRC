@@ -32,9 +32,9 @@ public class VisionProcessor {
     
     //Camera constants used for distance calculation
     final int Y_IMAGE_RES = 480;		//X Image resolution in pixels, should be 120, 240 or 480
-    final double VIEW_ANGLE = 49;		//Axis M1013
+    //final double VIEW_ANGLE = 49;		//Axis M1013
     //final double VIEW_ANGLE = 41.7;		//Axis 206 camera
-    //final double VIEW_ANGLE = 37.4;  //Axis M1011 camera
+    final double VIEW_ANGLE = 37.4;  //Axis M1011 camera
     final double PI = 3.141592653;
 
     //Score limits used for target identification
@@ -113,7 +113,7 @@ public class VisionProcessor {
             }
             //ColorImage image;                           // next 2 lines read image from flash on cRIO
             //image = new RGBImage("/testImage.jpg");		// get the sample image from the cRIO flash
-            BinaryImage thresholdImage = image.thresholdHSV(105, 137, 230, 255, 133, 183);   // keep only green objects
+            BinaryImage thresholdImage = image.thresholdHSV(0, 255, 0, 255, 250, 255);   // keep only bright objects
             //thresholdImage.write("/threshold.bmp");
             BinaryImage filteredImage = thresholdImage.particleFilter(cc);           // filter out small particles
             //filteredImage.write("/filteredImage.bmp");
