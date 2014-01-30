@@ -95,7 +95,8 @@ public class VisionProcessor {
         /****** VISION PROC ***********************/
     }
     
-    public void autonomousPeriodic(RGBImage imageToUse) {
+    public boolean autonomousPeriodic(RGBImage imageToUse) {
+        
         try {
             /**
              * Do the image capture with the camera and apply the algorithm
@@ -184,10 +185,9 @@ public class VisionProcessor {
                         }
                     }
                     //Determine if the best target is a Hot target
-                    target.Hot = hotOrNot(target);
+                 //   return hotOrNot(target);
                 }
-
-                if (verticalTargetCount > 0) {
+                /*if (verticalTargetCount > 0) {
                         //Information about the target is contained in the "target" structure
                     //To get measurement information such as sizes or locations use the
                     //horizontal or vertical index to get the particle report as shown below
@@ -200,7 +200,7 @@ public class VisionProcessor {
                         System.out.println("No hot target present");
                         System.out.println("Distance: " + distance);
                     }
-                }
+                }*/
             }
 
             /**
@@ -211,12 +211,13 @@ public class VisionProcessor {
             filteredImage.free();
             thresholdImage.free();
             image.free();
-
+            return hotOrNot(target);
             } catch (AxisCameraException ex) {        // this is needed if the camera.getImage() is called
                 ex.printStackTrace();
         } catch (NIVisionException ex) {
             ex.printStackTrace();
         }
+        return false;
     }
     
     /**
