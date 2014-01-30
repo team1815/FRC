@@ -30,8 +30,10 @@ import edu.wpi.first.wpilibj.camera.AxisCamera;
 public class IterativeBeast1815 extends IterativeRobot {
     
     RobotDrive drive = new RobotDrive(1, 2, 3, 4);
-    Joystick driveStick = new Joystick(1);
+    Joystick driveStick1 = new Joystick(1);
+    Joystick driveStick2 = new Joystick(2);
     AxisCamera camera = AxisCamera.getInstance();
+    AxisCamera launcherCamera = AxisCamera.getInstance("10.18.15.12");
     
     //guys a DoubleSolenoid might've been what we wanted
     Compressor compressor = new Compressor(1,1);   //Compressor Relay
@@ -176,22 +178,22 @@ public class IterativeBeast1815 extends IterativeRobot {
 //            Log.log("Turned on comrpessor");
 //        }
         
-        double forward = driveStick.getY();
-        double right = driveStick.getX() * .5;
-        if (driveStick.getTop()) {
-            forward *= .4;
-            right *= .8;
+        double left = driveStick2.getY();
+        double right = driveStick1.getY();
+        if (driveStick1.getTop()) {
+            left *= .4;
+            right *= .4;
         }
         //only change the direction if the time since the last press was over 
         if (forward_is_pickupper) {
-            drive.arcadeDrive(forward, right);
+            drive.tankDrive(left, right);
         } else {
-            drive.arcadeDrive(-forward, right);
+            drive.tankDrive(-right, -left);
         }
                 
         
         
-        if (driveStick.getRawButton(6)) {
+        if (driveStick1.getRawButton(6)) {
             pickUpperControl.toggle();
         }
         if (ball_lim_switch.get()) {
@@ -199,7 +201,7 @@ public class IterativeBeast1815 extends IterativeRobot {
             Log.log("Limit switch hit");
         }
         
-        if (driveStick.getRawButton(11)) {
+        if (driveStick1.getRawButton(11)) {
             if (!directionChanged) {
                 forward_is_pickupper = !forward_is_pickupper;
                 directionChanged = true;
@@ -207,22 +209,31 @@ public class IterativeBeast1815 extends IterativeRobot {
         } else {
             directionChanged = false;
         }
-        if (driveStick.getRawButton(7)) {
+        if (driveStick1.getRawButton(3)) {
             limSwitchControl.toggle();
         }
-        if (driveStick.getTrigger()){
+        if (driveStick1.getTrigger() && limSwitchControl.getIsUp()){
             if (shooterThread == null || !shooterThread.isAlive()) {
-                shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev);
+                shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1);
                 shooterThread.start();
                 Log.log("Single shot");
             } else {
                 Log.log("No single shot.");
             }
         }
-        if (driveStick.getRawButton(8)) {
+        if (driveStick2.getTrigger() && limSwitchControl.getIsUp()) {
+            if (shooterThread == null || !shooterThread.isAlive()) {
+                shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, .2);
+                shooterThread.start();
+                Log.log("Single weak shot");
+            } else {
+                Log.log("No single weak shot.");
+            }
+        }
+        if (driveStick1.getRawButton(8)) {
             launch_adjuster.set(1);
             //launch_adjuster_timer.go(10, true);
-        } else if (driveStick.getRawButton(9)) {
+        } else if (driveStick1.getRawButton(9)) {
             launch_adjuster.set(-1);
             //launch_adjuster_timer.go(10, false);
         } else {

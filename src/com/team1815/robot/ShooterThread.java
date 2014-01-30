@@ -29,10 +29,11 @@ public class ShooterThread extends Thread {
         rev1.set(true);
         rev2.set(true);
     }
-    public ShooterThread(Solenoid fwd1, Solenoid fwd2, Solenoid rev1, Solenoid rev2) {
+    public ShooterThread(Solenoid fwd1, Solenoid fwd2, Solenoid rev1, Solenoid rev2, double time_delay) {
         this.fwd1 = fwd1;
         this.fwd2 = fwd2;
         this.rev1 = rev1;
         this.rev2 = rev2;
+        this.time_delay = time_delay;
     }
 }
