@@ -16,7 +16,6 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PWM;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Solenoid;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.camera.AxisCamera;
 
@@ -47,8 +46,8 @@ public class IterativeBeast1815 extends IterativeRobot {
     Solenoid side_grabber_rev = new Solenoid(6);
     Solenoid pick_upper_down = new Solenoid(7);
     Solenoid pick_upper_up = new Solenoid(8);
-    SolenoidToggle pickUpperControl = new SolenoidToggle(pick_upper_up, pick_upper_down);
-    SolenoidToggle sideGrabberControl = new SolenoidToggle(side_grabber_fwd, side_grabber_rev);
+    SolenoidToggle pickUpperControl = new SolenoidToggle(pick_upper_up, pick_upper_down, this);
+    SolenoidToggle sideGrabberControl = new SolenoidToggle(side_grabber_fwd, side_grabber_rev, this);
     ShooterThread shooterThread;
     
     DigitalInput ball_lim_switch = new DigitalInput(2);
@@ -65,53 +64,6 @@ public class IterativeBeast1815 extends IterativeRobot {
     VisionProcessor visionProcessor = new VisionProcessor(camera);
     
     boolean our_side_is_hot;
-    
-    /**
-     * Simple toggle for a solenoid. Ensures that it it doesn't switch back and forth too quickly
-     * if the button is held down for more than one iteration.
-     */
-    class SolenoidToggle {
-        boolean is_up = true;
-        Timer timer = new Timer();
-        double prevTime = 0;
-        Solenoid fwd, rev;
-        
-        void toggle() {
-            if (timer.get() - prevTime > .5 || timer.get() < prevTime) {
-                fwd.set(is_up);
-                rev.set(!is_up);
-                is_up = !is_up;
-                prevTime = timer.get();
-                Log.log("Successful toggle");
-            } else {
-                Log.log("Unsuccessful toggle" + prevTime + ", " + timer.get());
-            }
-        }
-        
-        void putUpNoMatterWhat() {
-            fwd.set(false);
-            rev.set(true);
-            is_up = true;
-        }
-        
-        double timeSince() {
-            if (timer.get() > prevTime)
-                return timer.get() - prevTime;
-            else
-                return 0;
-        }
-        void start() {
-            timer.reset();
-            timer.start();
-        }
-        public boolean getIsUp() {
-            return is_up;
-        }
-        public SolenoidToggle(Solenoid fwd, Solenoid rev) {
-            this.fwd = fwd;
-            this.rev = rev;
-        }
-    }    
     
     private void stopAllPneumatics() {
         fast_shoot1_fwd.set(false);
