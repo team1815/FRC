@@ -43,12 +43,12 @@ public class IterativeBeast1815 extends IterativeRobot {
     Solenoid fast_shoot1_rev = new Solenoid(2);
     Solenoid fast_shoot2_fwd = new Solenoid(3);      //Fire on Output 3
     Solenoid fast_shoot2_rev = new Solenoid(4);
-    Solenoid lim_switch_fwd = new Solenoid(5);
-    Solenoid lim_switch_rev = new Solenoid(6);
+    Solenoid side_grabber_fwd = new Solenoid(5);
+    Solenoid side_grabber_rev = new Solenoid(6);
     Solenoid pick_upper_down = new Solenoid(7);
     Solenoid pick_upper_up = new Solenoid(8);
     SolenoidToggle pickUpperControl = new SolenoidToggle(pick_upper_up, pick_upper_down);
-    SolenoidToggle limSwitchControl = new SolenoidToggle(lim_switch_fwd, lim_switch_rev);
+    SolenoidToggle sideGrabberControl = new SolenoidToggle(side_grabber_fwd, side_grabber_rev);
     ShooterThread shooterThread;
     
     DigitalInput ball_lim_switch = new DigitalInput(2);
@@ -120,8 +120,8 @@ public class IterativeBeast1815 extends IterativeRobot {
         fast_shoot2_rev.set(false);
         pick_upper_down.set(false);
         pick_upper_up.set(false);
-        lim_switch_fwd.set(false);
-        lim_switch_rev.set(false);
+        side_grabber_fwd.set(false);
+        side_grabber_rev.set(false);
     }
     
     private void reverseMotors(boolean forward) {
@@ -174,7 +174,7 @@ public class IterativeBeast1815 extends IterativeRobot {
     public void teleopInit() {
         compressor.start();
         pickUpperControl.start();
-        limSwitchControl.start();
+        sideGrabberControl.start();
         getWatchdog().setEnabled(false); //TODO: true later
     }
 
@@ -224,9 +224,9 @@ public class IterativeBeast1815 extends IterativeRobot {
             directionChanged = false;
         }
         if (driveStick1.getRawButton(3)) {
-            limSwitchControl.toggle();
+            sideGrabberControl.toggle();
         }
-        if (driveStick1.getTrigger() && limSwitchControl.getIsUp()){
+        if (driveStick1.getTrigger() && sideGrabberControl.getIsUp()){
             if (shooterThread == null || !shooterThread.isAlive()) {
                 shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1);
                 shooterThread.start();
@@ -235,7 +235,7 @@ public class IterativeBeast1815 extends IterativeRobot {
                 Log.log("No single shot.");
             }
         }
-        if (driveStick2.getTrigger() && limSwitchControl.getIsUp()) {
+        if (driveStick2.getTrigger() && sideGrabberControl.getIsUp()) {
             if (shooterThread == null || !shooterThread.isAlive()) {
                 shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, .2);
                 shooterThread.start();
