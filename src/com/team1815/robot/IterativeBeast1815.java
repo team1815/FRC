@@ -160,7 +160,10 @@ public class IterativeBeast1815 extends IterativeRobot {
             Log.log("Limit switch hit");
         }
         if (our_state == State.NORMAL) {
-            go_fetch_pid.disable();
+            if (go_fetch_pid.isEnable()) {
+                go_fetch_pid.disable();
+                System.out.println("Disabling kill mode");
+            }
             double left = driveStick2.getY();
             double right = driveStick1.getY();
             if (driveStick1.getTop()) {
@@ -222,7 +225,10 @@ public class IterativeBeast1815 extends IterativeRobot {
             }
             
         } else if (our_state == State.GO_FETCH) {
-            go_fetch_pid.enable();
+            if (!go_fetch_pid.isEnable()) {
+                go_fetch_pid.enable();
+                System.out.println("Arf arf! Getting the ball!");
+            }
             if (!driveStick2.getRawButton(2)) {
                 our_state = State.NORMAL;
             }
