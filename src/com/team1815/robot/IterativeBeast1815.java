@@ -13,15 +13,13 @@ import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.PWM;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.camera.AxisCamera;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
-import edu.wpi.first.wpilibj.networktables2.TableKeyExistsWithDifferentTypeException;
-import edu.wpi.first.wpilibj.networktables2.type.NumberArray;
-import edu.wpi.first.wpilibj.tables.TableKeyNotDefinedException;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -31,6 +29,10 @@ import edu.wpi.first.wpilibj.tables.TableKeyNotDefinedException;
  * directory.
  */
 public class IterativeBeast1815 extends IterativeRobot {
+    
+    final static double Kp = 0.01;
+    final static double Ki = 0;
+    final static double Kd = 0.05;
     
     RobotDrive drive = new RobotDrive(1, 2, 3, 4);
     Joystick driveStick1 = new Joystick(1);
@@ -70,7 +72,11 @@ public class IterativeBeast1815 extends IterativeRobot {
     boolean our_side_is_hot;
     
     NetworkTable server = NetworkTable.getTable("");
-
+    CameraBallSource cameraBallSource = new CameraBallSource(server);
+    DriveOut driveOut = new DriveOut(drive);
+    PIDController go_fetch_pid = new PIDController(Kp, Ki, Kd, cameraBallSource, driveOut);
+    
+    int our_state = State.NORMAL;
     
     private void stopAllPneumatics() {
         fast_shoot1_fwd.set(false);
@@ -101,6 +107,14 @@ public class IterativeBeast1815 extends IterativeRobot {
         compressor.start();
         pickUpperControl.start();
         visionProcessor.robotInit();
+        
+        /**
+         * Set the PID
+         */
+        go_fetch_pid.setSetpoint(160);
+        go_fetch_pid.setInputRange(0, 320);
+        go_fetch_pid.setOutputRange(-1, 1);
+        go_fetch_pid.setPercentTolerance(5);
     }
     
     
@@ -141,79 +155,77 @@ public class IterativeBeast1815 extends IterativeRobot {
      * This function is called periodically during operator control
      */
     public void teleopPeriodic() {
-
-        try {
-            System.out.print(server.getNumber("COG_X") + ",");
-            System.out.print(server.getNumber("COG_Y"));
-            System.out.println(server.getNumber("IMAGE_COUNT", 0.0));
-        } catch (TableKeyExistsWithDifferentTypeException e) {
-            System.out.println("Different type.");
-            e.printStackTrace();
-        } catch (TableKeyNotDefinedException e) {
-            System.out.println("No key");
-            e.printStackTrace();
-        }
-        
-        double left = driveStick2.getY();
-        double right = driveStick1.getY();
-        if (driveStick1.getTop()) {
-            left *= .4;
-            right *= .4;
-        }
-        //only change the direction if the time since the last press was over 
-        if (forward_is_pickupper) {
-            drive.tankDrive(left, right);
-        } else {
-            drive.tankDrive(-right, -left);
-        }
-                
-        
-        
-        if (driveStick1.getRawButton(6)) {
-            pickUpperControl.toggle();
-        }
         if (ball_lim_switch.get()) {
             pickUpperControl.putUpNoMatterWhat();
             Log.log("Limit switch hit");
         }
-        
-        if (driveStick1.getRawButton(11)) {
-            if (!directionChanged) {
-                forward_is_pickupper = !forward_is_pickupper;
-                directionChanged = true;
+        if (our_state == State.NORMAL) {
+            go_fetch_pid.disable();
+            double left = driveStick2.getY();
+            double right = driveStick1.getY();
+            if (driveStick1.getTop()) {
+                left *= .6;
+                right *= .6;
             }
-        } else {
-            directionChanged = false;
-        }
-        if (driveStick1.getRawButton(3)) {
-            sideGrabberControl.toggle();
-        }
-        if (driveStick1.getTrigger() && sideGrabberControl.getIsUp()){
-            if (shooterThread == null || !shooterThread.isAlive()) {
-                shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1);
-                shooterThread.start();
-                Log.log("Single shot");
+            //only change the direction if the time since the last press was over 
+            if (forward_is_pickupper) {
+                drive.tankDrive(left, right);
             } else {
-                Log.log("No single shot.");
+                drive.tankDrive(-right, -left);
             }
-        }
-        if (driveStick2.getTrigger() && sideGrabberControl.getIsUp()) {
-            if (shooterThread == null || !shooterThread.isAlive()) {
-                shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, .2);
-                shooterThread.start();
-                Log.log("Single weak shot");
+
+            if (driveStick1.getRawButton(6)) {
+                pickUpperControl.toggle();
+            }
+
+            if (driveStick1.getRawButton(11)) {
+                if (!directionChanged) {
+                    forward_is_pickupper = !forward_is_pickupper;
+                    directionChanged = true;
+                }
             } else {
-                Log.log("No single weak shot.");
+                directionChanged = false;
             }
-        }
-        if (driveStick1.getRawButton(8)) {
-            launch_adjuster.set(1);
-            //launch_adjuster_timer.go(10, true);
-        } else if (driveStick1.getRawButton(9)) {
-            launch_adjuster.set(-1);
-            //launch_adjuster_timer.go(10, false);
-        } else {
-            launch_adjuster.set(0);
+            if (driveStick1.getRawButton(3)) {
+                sideGrabberControl.toggle();
+            }
+            if (driveStick1.getTrigger() && sideGrabberControl.getIsUp()){
+                if (shooterThread == null || !shooterThread.isAlive()) {
+                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1);
+                    shooterThread.start();
+                    Log.log("Single shot");
+                } else {
+                    Log.log("No single shot.");
+                }
+            }
+            if (driveStick2.getTrigger() && sideGrabberControl.getIsUp()) {
+                if (shooterThread == null || !shooterThread.isAlive()) {
+                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, .2);
+                    shooterThread.start();
+                    Log.log("Single weak shot");
+                } else {
+                    Log.log("No single weak shot.");
+                }
+            }
+            if (driveStick1.getRawButton(8)) {
+                launch_adjuster.set(1);
+                //launch_adjuster_timer.go(10, true);
+            } else if (driveStick1.getRawButton(9)) {
+                launch_adjuster.set(-1);
+                //launch_adjuster_timer.go(10, false);
+            } else {
+                launch_adjuster.set(0);
+            }
+            
+            if (driveStick2.getRawButton(2)) {
+                our_state = State.GO_FETCH;
+            }
+            
+        } else if (our_state == State.GO_FETCH) {
+            go_fetch_pid.enable();
+            if (!driveStick2.getRawButton(2)) {
+                our_state = State.NORMAL;
+            }
         }
         
     }
