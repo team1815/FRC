@@ -18,6 +18,10 @@ import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.camera.AxisCamera;
+import edu.wpi.first.wpilibj.networktables.NetworkTable;
+import edu.wpi.first.wpilibj.networktables2.TableKeyExistsWithDifferentTypeException;
+import edu.wpi.first.wpilibj.networktables2.type.NumberArray;
+import edu.wpi.first.wpilibj.tables.TableKeyNotDefinedException;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -64,6 +68,9 @@ public class IterativeBeast1815 extends IterativeRobot {
     VisionProcessor visionProcessor = new VisionProcessor(camera);
     
     boolean our_side_is_hot;
+    
+    NetworkTable server = NetworkTable.getTable("");
+
     
     private void stopAllPneumatics() {
         fast_shoot1_fwd.set(false);
@@ -135,14 +142,17 @@ public class IterativeBeast1815 extends IterativeRobot {
      */
     public void teleopPeriodic() {
 
-        //Log.log(compressor.getPressureSwitchValue()? "yes" : "no");
-//        if(compressor.getPressureSwitchValue() && compressor.enabled()){
-//            compressor.stop();
-//            Log.log("Shut off compressor");
-//        }else if (!compressor.getPressureSwitchValue() && !compressor.enabled()){
-//            compressor.start();
-//            Log.log("Turned on comrpessor");
-//        }
+        try {
+            System.out.print(server.getNumber("COG_X") + ",");
+            System.out.print(server.getNumber("COG_Y"));
+            System.out.println(server.getNumber("IMAGE_COUNT", 0.0));
+        } catch (TableKeyExistsWithDifferentTypeException e) {
+            System.out.println("Different type.");
+            e.printStackTrace();
+        } catch (TableKeyNotDefinedException e) {
+            System.out.println("No key");
+            e.printStackTrace();
+        }
         
         double left = driveStick2.getY();
         double right = driveStick1.getY();
