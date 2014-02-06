@@ -40,8 +40,12 @@ public class IterativeBeast1815 extends IterativeRobot {
     Joystick driveStick2 = new Joystick(2);
     AxisCamera camera = AxisCamera.getInstance();
     AxisCamera launcherCamera = AxisCamera.getInstance("10.18.15.12");
+    
+    //Autonomous only
     int hotCount = 0; //if reaches 10, target is hot and go to score
     int loopCount = 0; //makes sure goal is hot 9/10 times
+    static int autonomousMove = State.GO_FORWARD;
+    static int autonomousShoot = State.NOT_SHOT;
     
     //guys a DoubleSolenoid might've been what we wanted
     Compressor compressor = new Compressor(1,1);   //Compressor Relay
@@ -125,14 +129,25 @@ public class IterativeBeast1815 extends IterativeRobot {
         pickUpperControl.start();
         camera_light.setRaw(255);
         visionProcessor.autonomousInit();
-        
+        (new AutonomousMove()).start();
     }
 
     /**
      * This function is called periodically during autonomous
      */
     public void autonomousPeriodic() {
-        loopCount++;
+        if (autonomousMove == State.GO_FORWARD){
+            //move forward for 2-3s
+            drive.drive(0.7, 0.0);
+        }
+        else if (autonomousMove == State.NORMAL && autonomousShoot == State.NOT_SHOT) {
+            //stop and shoot
+            drive.drive(0.0, 0.0);
+            shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1);
+            shooterThread.start();
+            autonomousShoot = State.SHOT;
+        }
+        /*loopCount++;
         //checks image continuously until target is hot for at least 9/10 checks
         if (visionProcessor.autonomousPeriodic(null)) {
             if (loopCount <= 10 && ++hotCount >= 9) {
@@ -143,7 +158,7 @@ public class IterativeBeast1815 extends IterativeRobot {
                 loopCount = 0;
                 hotCount = 0;
             }
-        }
+        }*/
     }
     
     public void teleopInit() {
