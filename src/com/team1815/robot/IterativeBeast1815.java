@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.PWM;
+import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.Victor;
@@ -58,9 +59,9 @@ public class IterativeBeast1815 extends IterativeRobot {
     
     DigitalInput ball_lim_switch = new DigitalInput(2);
     
-    Victor launch_adjuster = new Victor(5);
-    DigitalInput launch_adjuster_lim_switch = new DigitalInput(3);
-    TimedMotor launch_adjuster_timer = new TimedMotor(launch_adjuster);
+    Relay launch_adjuster = new Relay(2);
+    //DigitalInput launch_adjuster_lim_switch = new DigitalInput(3);
+    //TimedMotor launch_adjuster_timer = new TimedMotor(launch_adjuster);
     
     private boolean forward_is_pickupper = false;
     private boolean directionChanged = false;
@@ -115,6 +116,7 @@ public class IterativeBeast1815 extends IterativeRobot {
         go_fetch_pid.setInputRange(0, 320);
         go_fetch_pid.setOutputRange(-1, 1);
         go_fetch_pid.setPercentTolerance(5);
+        launch_adjuster.setDirection(Relay.Direction.kBoth);
     }
     
     
@@ -208,13 +210,10 @@ public class IterativeBeast1815 extends IterativeRobot {
                 }
             }
             if (driveStick1.getRawButton(8)) {
-                launch_adjuster.set(1);
-                //launch_adjuster_timer.go(10, true);
-            } else if (driveStick1.getRawButton(9)) {
-                launch_adjuster.set(-1);
-                //launch_adjuster_timer.go(10, false);
+                launch_adjuster.set(Relay.Value.kOn);
+                launch_adjuster.set(Relay.Value.kForward);
             } else {
-                launch_adjuster.set(0);
+                launch_adjuster.set(Relay.Value.kOff);
             }
             
             if (driveStick2.getRawButton(2)) {
