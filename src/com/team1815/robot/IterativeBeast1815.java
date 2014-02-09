@@ -58,7 +58,7 @@ public class IterativeBeast1815 extends IterativeRobot {
     Solenoid pick_upper_down = new Solenoid(7);
     Solenoid pick_upper_up = new Solenoid(8);
     SolenoidToggle pickUpperControl = new SolenoidToggle(pick_upper_up, pick_upper_down, this);
-    SolenoidToggle sideGrabberControl = new SolenoidToggle(side_grabber_fwd, side_grabber_rev, this);
+    SolenoidToggle topGrabberControl = new SolenoidToggle(side_grabber_fwd, side_grabber_rev, this);
     ShooterThread shooterThread;
     
     DigitalInput ball_lim_switch = new DigitalInput(2);
@@ -82,6 +82,7 @@ public class IterativeBeast1815 extends IterativeRobot {
     PIDController go_fetch_pid = new PIDController(Kp, Ki, Kd, cameraBallSource, driveOut);
     
     int our_state = State.NORMAL;
+    boolean shooter_is_busy = false;
     
     private void stopAllPneumatics() {
         fast_shoot1_fwd.set(false);
@@ -164,7 +165,7 @@ public class IterativeBeast1815 extends IterativeRobot {
     public void teleopInit() {
         compressor.start();
         pickUpperControl.start();
-        sideGrabberControl.start();
+        topGrabberControl.start();
         getWatchdog().setEnabled(false); //TODO: true later
     }
 
@@ -181,12 +182,10 @@ public class IterativeBeast1815 extends IterativeRobot {
                 go_fetch_pid.disable();
                 System.out.println("Disabling kill mode");
             }
-            double left = driveStick2.getY();
-            double right = driveStick1.getY();
-            if (driveStick1.getTop()) {
-                left *= .6;
-                right *= .6;
-            }
+            //square by magnitude but not sign
+            double left = - Math.abs(driveStick2.getY())*driveStick2.getY() - Math.abs(driveStick2.getX())*driveStick2.getX();
+            double right = - Math.abs(driveStick2.getY())*driveStick2.getY() + Math.abs(driveStick2.getX())*driveStick2.getX();
+
             //only change the direction if the time since the last press was over 
             if (forward_is_pickupper) {
                 drive.tankDrive(left, right);
@@ -206,28 +205,48 @@ public class IterativeBeast1815 extends IterativeRobot {
             } else {
                 directionChanged = false;
             }
-            if (driveStick1.getRawButton(3)) {
-                sideGrabberControl.toggle();
+            if (driveStick2.getRawButton(3)) {
+                topGrabberControl.toggle();
             }
-            if (driveStick1.getTrigger() && sideGrabberControl.getIsUp()){
+            if (driveStick1.getTrigger() && topGrabberControl.getIsUp()){
                 if (shooterThread == null || !shooterThread.isAlive()) {
-                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1);
-                    shooterThread.start();
-                    Log.log("Single shot");
+                    shooter_is_busy = true;
+                    fast_shoot1_fwd.set(true);
+                    fast_shoot2_fwd.set(true);
+                    fast_shoot2_rev.set(false);
+                    fast_shoot2_rev.set(false);
+                    Log.log("Single hold shot");
                 } else {
-                    Log.log("No single shot.");
+                    Log.log("No single hold shot.");
                 }
+            } else {
+                shooter_is_busy = false;
             }
-            if (driveStick2.getTrigger() && sideGrabberControl.getIsUp()) {
+            if (driveStick1.getRawButton(2) && topGrabberControl.getIsUp() && !shooter_is_busy) {
                 if (shooterThread == null || !shooterThread.isAlive()) {
-                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, .2);
+                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, .15);
                     shooterThread.start();
                     Log.log("Single weak shot");
                 } else {
                     Log.log("No single weak shot.");
                 }
             }
-            if (driveStick1.getRawButton(8)) {
+            if (driveStick1.getRawButton(3) && topGrabberControl.getIsUp() && !shooter_is_busy) {
+                if (shooterThread == null || !shooterThread.isAlive()) {
+                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, .22);
+                    shooterThread.start();
+                    Log.log("Single weak shot");
+                } else {
+                    Log.log("No single weak shot.");
+                }
+            }
+            if ((shooterThread == null || !shooterThread.isAlive()) && !shooter_is_busy) {
+                fast_shoot1_fwd.set(false);
+                fast_shoot2_fwd.set(false);
+                fast_shoot2_rev.set(true);
+                fast_shoot1_rev.set(true);
+            }
+            if (driveStick1.getRawButton(4)) {
                 launch_adjuster.set(Relay.Value.kOn);
                 launch_adjuster.set(Relay.Value.kForward);
             } else {
