@@ -1,6 +1,6 @@
 package com.team1815.robot;
 
-public class AutonomousMove extends Thread{
+public class AutonomousMove extends Thread {
     
     double startTime = System.currentTimeMillis();
 
@@ -8,8 +8,10 @@ public class AutonomousMove extends Thread{
         if (startTime > System.currentTimeMillis()) {
             startTime = System.currentTimeMillis();
         }
-        while (System.currentTimeMillis() - startTime < 1000 ) {
-
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
         }
         IterativeBeast1815.autonomousMove = State.NORMAL;
     }
