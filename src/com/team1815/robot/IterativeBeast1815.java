@@ -60,6 +60,7 @@ public class IterativeBeast1815 extends IterativeRobot {
     SolenoidToggle pickUpperControl = new SolenoidToggle(pick_upper_up, pick_upper_down, this);
     SolenoidToggle topGrabberControl = new SolenoidToggle(side_grabber_fwd, side_grabber_rev, this);
     ShooterThread shooterThread;
+    SpikeThread spikeThread;
     
     DigitalInput ball_lim_switch = new DigitalInput(2);
     
@@ -143,10 +144,10 @@ public class IterativeBeast1815 extends IterativeRobot {
         }
         else if (autonomousMove == State.NORMAL && autonomousShoot == State.NOT_SHOT) {
             //stop and shoot
-            drive.drive(0.0, 0.0);
-            shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1);
+            shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
             shooterThread.start();
             autonomousShoot = State.SHOT;
+            drive.drive(0.2, 0.0);
         }
         /*loopCount++;
         //checks image continuously until target is hot for at least 9/10 checks
@@ -166,6 +167,7 @@ public class IterativeBeast1815 extends IterativeRobot {
         compressor.start();
         pickUpperControl.start();
         topGrabberControl.start();
+        camera_light.setRaw(255);
         getWatchdog().setEnabled(false); //TODO: true later
     }
 
@@ -188,16 +190,16 @@ public class IterativeBeast1815 extends IterativeRobot {
 
             //only change the direction if the time since the last press was over 
             if (forward_is_pickupper) {
-                drive.tankDrive(left, right);
-            } else {
                 drive.tankDrive(-right, -left);
+            } else {
+                drive.tankDrive(left, right);
             }
 
             if (driveStick1.getRawButton(6)) {
                 pickUpperControl.toggle();
             }
 
-            if (driveStick1.getRawButton(11)) {
+            if (driveStick2.getRawButton(4)) {
                 if (!directionChanged) {
                     forward_is_pickupper = !forward_is_pickupper;
                     directionChanged = true;
@@ -205,17 +207,13 @@ public class IterativeBeast1815 extends IterativeRobot {
             } else {
                 directionChanged = false;
             }
-            if (driveStick2.getRawButton(3)) {
+            if (driveStick1.getRawButton(4)) {
                 topGrabberControl.toggle();
             }
             if (driveStick1.getTrigger() && topGrabberControl.getIsUp()){
                 if (shooterThread == null || !shooterThread.isAlive()) {
-                    shooter_is_busy = true;
-                    fast_shoot1_fwd.set(true);
-                    fast_shoot2_fwd.set(true);
-                    fast_shoot2_rev.set(false);
-                    fast_shoot2_rev.set(false);
-                    Log.log("Single hold shot");
+                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
+                    shooterThread.start();
                 } else {
                     Log.log("No single hold shot.");
                 }
@@ -246,11 +244,11 @@ public class IterativeBeast1815 extends IterativeRobot {
                 fast_shoot2_rev.set(true);
                 fast_shoot1_rev.set(true);
             }
-            if (driveStick1.getRawButton(4)) {
-                launch_adjuster.set(Relay.Value.kOn);
-                launch_adjuster.set(Relay.Value.kForward);
-            } else {
-                launch_adjuster.set(Relay.Value.kOff);
+            if (driveStick1.getRawButton(7) &&
+                    (spikeThread == null || !spikeThread.isAlive())) {
+                spikeThread = new SpikeThread(pick_upper_up, pick_upper_down, launch_adjuster);
+                spikeThread.start();
+                Log.log("spike");
             }
             
             if (driveStick2.getRawButton(2)) {
