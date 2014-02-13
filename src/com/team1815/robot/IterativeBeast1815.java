@@ -9,15 +9,19 @@ package com.team1815.robot;
 
 
 import com.sun.squawk.debugger.Log;
+import edu.wpi.first.wpilibj.AnalogChannel;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PIDController;
 import edu.wpi.first.wpilibj.PWM;
 import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.Ultrasonic;
 import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.camera.AxisCamera;
 import edu.wpi.first.wpilibj.networktables.NetworkTable;
@@ -72,8 +76,12 @@ public class IterativeBeast1815 extends IterativeRobot {
     private boolean directionChanged = false;
     
     PWM camera_light = new PWM(10);
-    
+    Servo acquire_cam_servo = new Servo(8);
     VisionProcessor visionProcessor = new VisionProcessor(camera);
+    
+    Encoder encoder_l = new Encoder(7, 8);
+    Encoder encoder_r = new Encoder(13, 14);
+    AnalogChannel acquire_ultrasonic = new AnalogChannel(1);
     
     boolean our_side_is_hot;
     
@@ -104,6 +112,24 @@ public class IterativeBeast1815 extends IterativeRobot {
     }
     
     /**
+     * 
+     * @param start true for start, false for stop
+     */
+    private void encoders(boolean start) {
+        if (start) {
+            encoder_l.start();
+            encoder_r.start();
+            encoder_l.setDistancePerPulse(1);
+            encoder_r.setDistancePerPulse(1);
+        } else {
+            encoder_l.reset();
+            encoder_r.reset();
+            encoder_l.stop();
+            encoder_r.stop();
+        }
+    }
+    
+    /**
      * This function is run when the robot is first started up and should be
      * used for any initialization code.
      */
@@ -123,6 +149,7 @@ public class IterativeBeast1815 extends IterativeRobot {
         go_fetch_pid.setOutputRange(-1, 1);
         go_fetch_pid.setPercentTolerance(5);
         launch_adjuster.setDirection(Relay.Direction.kBoth);
+        encoders(true);
     }
     
     
@@ -254,7 +281,19 @@ public class IterativeBeast1815 extends IterativeRobot {
             if (driveStick2.getRawButton(2)) {
                 our_state = State.GO_FETCH;
             }
+            if (driveStick1.getRawButton(10)) {
+                acquire_cam_servo.set(.25);
+                System.out.println(acquire_cam_servo.get());
+            } else if (driveStick1.getRawButton(11)) {
+                acquire_cam_servo.set(0.75);
+                System.out.println(acquire_cam_servo.get());
+            }
             
+            if (driveStick1.getRawButton(9)) {
+                System.out.println("us: " + acquire_ultrasonic.getVoltage());
+                System.out.println("enc1: " + encoder_l.get());
+                System.out.println("enc2: " + encoder_r.get());
+            }
         } else if (our_state == State.GO_FETCH) {
             if (!go_fetch_pid.isEnable()) {
                 go_fetch_pid.enable();
@@ -266,12 +305,15 @@ public class IterativeBeast1815 extends IterativeRobot {
         }
         
     }
+    private void changeServo(Servo servo, double degrees) {
+        servo.set(degrees + servo.getAngle());
+    }
     
     public void disabledInit() {
         camera_light.setRaw(0);
         stopAllPneumatics();
         compressor.stop();
-        
+        //encoders(false);        
     }
     
     /**
