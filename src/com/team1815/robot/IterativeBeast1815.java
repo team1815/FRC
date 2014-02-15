@@ -21,6 +21,7 @@ import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj.Solenoid;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Ultrasonic;
 import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.camera.AxisCamera;
@@ -72,7 +73,7 @@ public class IterativeBeast1815 extends IterativeRobot {
     //DigitalInput launch_adjuster_lim_switch = new DigitalInput(3);
     //TimedMotor launch_adjuster_timer = new TimedMotor(launch_adjuster);
     
-    private boolean forward_is_pickupper = false;
+    private boolean forward_is_pickupper = true;
     private boolean directionChanged = false;
     
     PWM camera_light = new PWM(10);
@@ -84,6 +85,7 @@ public class IterativeBeast1815 extends IterativeRobot {
     AnalogChannel acquire_ultrasonic = new AnalogChannel(1);
     
     boolean our_side_is_hot;
+    double var_power_shot = 0.20;
     
     NetworkTable server = NetworkTable.getTable("");
     CameraBallSource cameraBallSource = new CameraBallSource(server);
@@ -169,13 +171,16 @@ public class IterativeBeast1815 extends IterativeRobot {
             //move forward for 2-3s
             drive.drive(0.7, 0.0);
         }
-        else if (autonomousMove == State.NORMAL && autonomousShoot == State.NOT_SHOT) {
+        else if (autonomousMove == State.NORMAL && (autonomousShoot == State.NOT_SHOT ||
+                autonomousShoot == State.SHOT_ONCE)) {
             //stop and shoot
             shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
             shooterThread.start();
-            autonomousShoot = State.SHOT;
-            drive.drive(0.2, 0.0);
+            if (autonomousShoot == State.NOT_SHOT) autonomousShoot = State.SHOT_ONCE;
+            else if (autonomousShoot == State.SHOT_ONCE) autonomousShoot = State.SHOT_TWICE;
+            drive.drive(0.7, 0.0);
         }
+     
         /*loopCount++;
         //checks image continuously until target is hot for at least 9/10 checks
         if (visionProcessor.autonomousPeriodic(null)) {
@@ -247,6 +252,13 @@ public class IterativeBeast1815 extends IterativeRobot {
             } else {
                 shooter_is_busy = false;
             }
+            if (driveStick1.getRawButton(5) && topGrabberControl.getIsUp()) {
+                if (shooterThread == null || !shooterThread.isAlive()) {
+                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, var_power_shot);
+                    shooterThread.start();
+                    System.out.println("Shot with " + var_power_shot);
+                }
+            }
             if (driveStick1.getRawButton(2) && topGrabberControl.getIsUp() && !shooter_is_busy) {
                 if (shooterThread == null || !shooterThread.isAlive()) {
                     shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, .15);
@@ -258,7 +270,7 @@ public class IterativeBeast1815 extends IterativeRobot {
             }
             if (driveStick1.getRawButton(3) && topGrabberControl.getIsUp() && !shooter_is_busy) {
                 if (shooterThread == null || !shooterThread.isAlive()) {
-                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, .22);
+                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, .20);
                     shooterThread.start();
                     Log.log("Single weak shot");
                 } else {
@@ -293,6 +305,13 @@ public class IterativeBeast1815 extends IterativeRobot {
                 System.out.println("us: " + acquire_ultrasonic.getVoltage());
                 System.out.println("enc1: " + encoder_l.get());
                 System.out.println("enc2: " + encoder_r.get());
+            }
+            if (driveStick2.getRawButton(11)) {
+                var_power_shot += 0.01;
+                System.out.println("Changing variable shot to: " + var_power_shot);
+            } else if (driveStick2.getRawButton(10)) {
+                var_power_shot -= 0.01;
+                System.out.println("Changing variable shot to: " + var_power_shot);
             }
         } else if (our_state == State.GO_FETCH) {
             if (!go_fetch_pid.isEnable()) {
