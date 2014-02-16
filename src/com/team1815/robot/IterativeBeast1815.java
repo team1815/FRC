@@ -329,7 +329,7 @@ public class IterativeBeast1815 extends IterativeRobot {
     }
     
     public void disabledInit() {
-        camera_light.setRaw(0);
+        //camera_light.setRaw(0);
         stopAllPneumatics();
         compressor.stop();
         //encoders(false);        
