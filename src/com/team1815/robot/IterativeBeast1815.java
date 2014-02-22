@@ -39,6 +39,8 @@ public class IterativeBeast1815 extends IterativeRobot {
     final static double Kp = 0.01;
     final static double Ki = 0;
     final static double Kd = 0.05;
+    //distance to go forward for autonomous
+    final static double DISTANCE = 100; //NEEDS TESTING
     
     RobotDrive drive = new RobotDrive(1, 2, 3, 4);
     Joystick driveStick1 = new Joystick(1);
@@ -49,6 +51,8 @@ public class IterativeBeast1815 extends IterativeRobot {
     //Autonomous only
     int hotCount = 0; //if reaches 10, target is hot and go to score
     int loopCount = 0; //makes sure goal is hot 9/10 times
+    Encoder autoEncoder_l = new Encoder(7, 8);
+    Encoder autoEncoder_r = new Encoder(13, 14);
     static int autonomousMove = State.GO_FORWARD;
     static int autonomousShoot = State.NOT_SHOT;
     
@@ -123,9 +127,9 @@ public class IterativeBeast1815 extends IterativeRobot {
             encoder_r.start();
             encoder_l.setDistancePerPulse(1);
             encoder_r.setDistancePerPulse(1);
-        } else {
             encoder_l.reset();
             encoder_r.reset();
+        } else {       
             encoder_l.stop();
             encoder_r.stop();
         }
@@ -160,14 +164,35 @@ public class IterativeBeast1815 extends IterativeRobot {
         pickUpperControl.start();
         camera_light.setRaw(255);
         visionProcessor.autonomousInit();
-        (new AutonomousMove()).start();
+        encoders(true);
     }
 
     /**
      * This function is called periodically during autonomous
      */
-    public void autonomousPeriodic() {
-        if (autonomousMove == State.GO_FORWARD){
+    public void autonomousPeriodic() {   
+        
+        if (visionProcessor.autonomousPeriodic(null)) {
+            if (loopCount <= 10 && ++hotCount >= 9) {
+                if (autoEncoder_l.getDistance() < DISTANCE && autoEncoder_r.getDistance() < DISTANCE) {
+                    drive.drive(0.7, 0.0);
+                }
+                else if (autoEncoder_l.getDistance() >= DISTANCE && autoEncoder_r.getDistance() >= DISTANCE && 
+                        autonomousShoot == State.NOT_SHOT) {
+                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
+                    shooterThread.start();
+                    drive.drive(0.0, 0.0);
+                    encoders(false);
+                }
+            }
+            else if (loopCount == 10 && ++hotCount < 9) {
+                //reset loopCount and hotCount for next check
+                loopCount = 0;
+                hotCount = 0;
+            }
+        }
+        
+        /*if (autonomousMove == State.GO_FORWARD){
             //move forward for 2-3s
             drive.drive(0.7, 0.0);
         }
@@ -179,7 +204,7 @@ public class IterativeBeast1815 extends IterativeRobot {
             if (autonomousShoot == State.NOT_SHOT) autonomousShoot = State.SHOT_ONCE;
             else if (autonomousShoot == State.SHOT_ONCE) autonomousShoot = State.SHOT_TWICE;
             drive.drive(0.7, 0.0);
-        }
+        }*/
      
         /*loopCount++;
         //checks image continuously until target is hot for at least 9/10 checks
