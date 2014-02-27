@@ -82,8 +82,6 @@ public class VisionProcessor {
     public void robotInit() {        
         /**** VISION PROC *************************************************/
         //camera = AxisCamera.getInstance();  // get an instance of the camera
-        cc = new CriteriaCollection();      // create the criteria for the particle filter
-        cc.addCriteria(NIVision.MeasurementType.IMAQ_MT_AREA, AREA_MINIMUM, 65535, false);
         /****** END VISION PROC *********************************************/
     }
     
@@ -95,7 +93,7 @@ public class VisionProcessor {
         /****** VISION PROC ***********************/
     }
     
-    public boolean autonomousPeriodic(RGBImage imageToUse) {
+    public boolean autonomousPeriodic() {
         
         try {
             /**
@@ -107,17 +105,26 @@ public class VisionProcessor {
              *
              */
             ColorImage image;
-            if (imageToUse == null) {
-                image = camera.getImage();     // comment if using stored images
-            } else {
-                image = imageToUse;
+            image = camera.getImage();     // comment if using stored images
+            if (image == null) {
+                System.out.println("image is null");
+                return false;
             }
+            
             //ColorImage image;                           // next 2 lines read image from flash on cRIO
             //image = new RGBImage("/testImage.jpg");		// get the sample image from the cRIO flash
             BinaryImage thresholdImage = image.thresholdHSV(0, 255, 0, 255, 250, 255);   // keep only bright objects
+            if (thresholdImage == null) {
+                System.out.println("thresholdImage is null");
+                return false;
+            }
             //thresholdImage.write("/threshold.bmp");
             BinaryImage filteredImage = thresholdImage.particleFilter(cc);           // filter out small particles
             //filteredImage.write("/filteredImage.bmp");
+            if (filteredImage == null) {
+                System.out.println("filteredImage is null");
+                return false;
+            }
 
             //iterate through each particle and score to see if it is a target
             System.out.println(filteredImage.getNumberParticles());
@@ -146,6 +153,9 @@ public class VisionProcessor {
                     }
                     System.out.println("rect: " + scores[i].rectangularity + "ARHoriz: " + scores[i].aspectRatioHorizontal);
                     System.out.println("ARVert: " + scores[i].aspectRatioVertical);
+                }
+                if (target == null) {
+                    autonomousInit();
                 }
 
                 //Zero out scores and set verticalIndex to first target in case there are no horizontal targets
@@ -212,8 +222,8 @@ public class VisionProcessor {
             thresholdImage.free();
             image.free();
             return hotOrNot(target);
-            } catch (AxisCameraException ex) {        // this is needed if the camera.getImage() is called
-                ex.printStackTrace();
+        } catch (AxisCameraException ex) {        // this is needed if the camera.getImage() is called
+                //ex.printStackTrace();
         } catch (NIVisionException ex) {
             ex.printStackTrace();
         }
@@ -225,7 +235,9 @@ public class VisionProcessor {
      * @param camera The camera, if we're running on the robot
      */
     public VisionProcessor(AxisCamera camera) {
-        this.camera = camera;
+        this.camera = camera;        
+        cc = new CriteriaCollection();      // create the criteria for the particle filter
+        cc.addCriteria(NIVision.MeasurementType.IMAQ_MT_AREA, AREA_MINIMUM, 65535, false);
     }
     
     /**
@@ -355,9 +367,14 @@ public class VisionProcessor {
     boolean hotOrNot(TargetReport target) {
         boolean isHot = true;
 
-        isHot &= target.tapeWidthScore >= TAPE_WIDTH_LIMIT;
-        isHot &= target.verticalScore >= VERTICAL_SCORE_LIMIT;
-        isHot &= (target.leftScore > LR_SCORE_LIMIT) | (target.rightScore > LR_SCORE_LIMIT);
+        try {
+            isHot &= target.tapeWidthScore >= TAPE_WIDTH_LIMIT;
+            isHot &= target.verticalScore >= VERTICAL_SCORE_LIMIT;
+            isHot &= (target.leftScore > LR_SCORE_LIMIT) | (target.rightScore > LR_SCORE_LIMIT);
+        } catch (NullPointerException e) {
+            System.err.println("null target to analyze");
+            return false;
+        }
 
         return isHot;
     }

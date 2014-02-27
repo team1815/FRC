@@ -43,8 +43,8 @@ public class IterativeBeast1815 extends IterativeRobot {
     final static double DISTANCE = 100; //NEEDS TESTING
     
     RobotDrive drive = new RobotDrive(1, 2, 3, 4);
-    Joystick driveStick1 = new Joystick(1);
-    Joystick driveStick2 = new Joystick(2);
+    Joystick launchStick = new Joystick(1);
+    Joystick driveStick = new Joystick(2);
     AxisCamera camera = AxisCamera.getInstance();
     AxisCamera launcherCamera = AxisCamera.getInstance("10.18.15.12");
     
@@ -80,14 +80,13 @@ public class IterativeBeast1815 extends IterativeRobot {
     
     PWM camera_light = new PWM(10);
     Servo acquire_cam_servo = new Servo(8);
-    VisionProcessor visionProcessor = new VisionProcessor(camera);
+    VisionProcessor visionProcessor = new VisionProcessor(launcherCamera);
     
     Encoder encoder_l = new Encoder(7, 8);
     Encoder encoder_r = new Encoder(13, 14);
     AnalogChannel acquire_ultrasonic = new AnalogChannel(1);
     
     boolean our_side_is_hot;
-    double var_power_shot = 0.20;
     
     NetworkTable server = NetworkTable.getTable("");
     CameraBallSource cameraBallSource = new CameraBallSource(server);
@@ -133,6 +132,24 @@ public class IterativeBeast1815 extends IterativeRobot {
         }
     }
     
+    private void network() {
+        camera = AxisCamera.getInstance();
+        launcherCamera = AxisCamera.getInstance("10.18.15.12");
+        visionProcessor = new VisionProcessor(launcherCamera);
+        server = NetworkTable.getTable("");
+        cameraBallSource = new CameraBallSource(server);
+        driveOut = new DriveOut(drive);
+        go_fetch_pid = new PIDController(Kp, Ki, Kd, cameraBallSource, driveOut);
+        
+        /**
+         * Set the PID
+         */
+        go_fetch_pid.setSetpoint(160);
+        go_fetch_pid.setInputRange(0, 320);
+        go_fetch_pid.setOutputRange(-1, 1);
+        go_fetch_pid.setPercentTolerance(5);
+    }
+    
     /**
      * This function is run when the robot is first started up and should be
      * used for any initialization code.
@@ -144,14 +161,7 @@ public class IterativeBeast1815 extends IterativeRobot {
         compressor.start();
         pickUpperControl.start();
         visionProcessor.robotInit();
-        
-        /**
-         * Set the PID
-         */
-        go_fetch_pid.setSetpoint(160);
-        go_fetch_pid.setInputRange(0, 320);
-        go_fetch_pid.setOutputRange(-1, 1);
-        go_fetch_pid.setPercentTolerance(5);
+        network();
         launch_adjuster.setDirection(Relay.Direction.kBoth);
         encoders(true);
     }
@@ -162,6 +172,7 @@ public class IterativeBeast1815 extends IterativeRobot {
         pickUpperControl.start();
         camera_light.setRaw(255);
         visionProcessor.autonomousInit();
+        network();
         encoders(true);
     }
 
@@ -170,7 +181,7 @@ public class IterativeBeast1815 extends IterativeRobot {
      */
     public void autonomousPeriodic() {   
         
-        if (visionProcessor.autonomousPeriodic(null)) {
+        if (visionProcessor.autonomousPeriodic()) {
             if (loopCount <= 10 && ++hotCount >= 9) {
                 if (encoder_l.getDistance() < DISTANCE && encoder_r.getDistance() < DISTANCE) {
                     drive.drive(0.7, 0.0);
@@ -223,6 +234,7 @@ public class IterativeBeast1815 extends IterativeRobot {
         pickUpperControl.start();
         topGrabberControl.start();
         camera_light.setRaw(255);
+        network();
         getWatchdog().setEnabled(false); //TODO: true later
     }
 
@@ -240,9 +252,13 @@ public class IterativeBeast1815 extends IterativeRobot {
                 System.out.println("Disabling kill mode");
             }
             //square by magnitude but not sign
-            double left = - Math.abs(driveStick2.getY())*driveStick2.getY() - Math.abs(driveStick2.getX())*driveStick2.getX();
-            double right = - Math.abs(driveStick2.getY())*driveStick2.getY() + Math.abs(driveStick2.getX())*driveStick2.getX();
+            double left = - Math.abs(driveStick.getY())*driveStick.getY() - Math.abs(driveStick.getX())*driveStick.getX();
+            double right = - Math.abs(driveStick.getY())*driveStick.getY() + Math.abs(driveStick.getX())*driveStick.getX();
 
+            if (driveStick.getRawButton(3)) {
+                left *= .5;
+                right *= .5;
+            }
             //only change the direction if the time since the last press was over 
             if (forward_is_pickupper) {
                 drive.tankDrive(-right, -left);
@@ -250,11 +266,11 @@ public class IterativeBeast1815 extends IterativeRobot {
                 drive.tankDrive(left, right);
             }
 
-            if (driveStick1.getRawButton(6)) {
+            if (launchStick.getRawButton(6)) {
                 pickUpperControl.toggle();
             }
 
-            if (driveStick2.getRawButton(4)) {
+            if (driveStick.getRawButton(4)) {
                 if (!directionChanged) {
                     forward_is_pickupper = !forward_is_pickupper;
                     directionChanged = true;
@@ -262,10 +278,10 @@ public class IterativeBeast1815 extends IterativeRobot {
             } else {
                 directionChanged = false;
             }
-            if (driveStick1.getRawButton(4)) {
+            if (launchStick.getRawButton(4)) {
                 topGrabberControl.toggle();
             }
-            if (driveStick1.getTrigger() && topGrabberControl.getIsUp()){
+            if (launchStick.getTrigger() && topGrabberControl.getIsUp()){
                 if (shooterThread == null || !shooterThread.isAlive()) {
                     shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
                     shooterThread.start();
@@ -275,14 +291,7 @@ public class IterativeBeast1815 extends IterativeRobot {
             } else {
                 shooter_is_busy = false;
             }
-            if (driveStick1.getRawButton(5) && topGrabberControl.getIsUp()) {
-                if (shooterThread == null || !shooterThread.isAlive()) {
-                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, var_power_shot);
-                    shooterThread.start();
-                    System.out.println("Shot with " + var_power_shot);
-                }
-            }
-            if (driveStick1.getRawButton(2) && topGrabberControl.getIsUp() && !shooter_is_busy) {
+            if (launchStick.getRawButton(2) && topGrabberControl.getIsUp() && !shooter_is_busy) {
                 if (shooterThread == null || !shooterThread.isAlive()) {
                     shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, .15);
                     shooterThread.start();
@@ -291,13 +300,13 @@ public class IterativeBeast1815 extends IterativeRobot {
                     Log.log("No single weak shot.");
                 }
             }
-            if (driveStick1.getRawButton(3) && topGrabberControl.getIsUp() && !shooter_is_busy) {
+            if (launchStick.getRawButton(3) && topGrabberControl.getIsUp() && !shooter_is_busy) {
                 if (shooterThread == null || !shooterThread.isAlive()) {
                     shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, .20);
                     shooterThread.start();
-                    Log.log("Single weak shot");
+                    Log.log("Single medium shot");
                 } else {
-                    Log.log("No single weak shot.");
+                    Log.log("No single medium shot.");
                 }
             }
             if ((shooterThread == null || !shooterThread.isAlive()) && !shooter_is_busy) {
@@ -306,42 +315,35 @@ public class IterativeBeast1815 extends IterativeRobot {
                 fast_shoot2_rev.set(true);
                 fast_shoot1_rev.set(true);
             }
-            if (driveStick1.getRawButton(7) &&
+            if (launchStick.getRawButton(7) &&
                     (spikeThread == null || !spikeThread.isAlive())) {
                 spikeThread = new SpikeThread(pick_upper_up, pick_upper_down, launch_adjuster);
                 spikeThread.start();
                 Log.log("spike");
             }
             
-            if (driveStick2.getRawButton(2)) {
+            if (driveStick.getRawButton(2)) {
                 our_state = State.GO_FETCH;
             }
-            if (driveStick1.getRawButton(10)) {
+            if (launchStick.getRawButton(10)) {
                 acquire_cam_servo.set(.25);
                 System.out.println(acquire_cam_servo.get());
-            } else if (driveStick1.getRawButton(11)) {
+            } else if (launchStick.getRawButton(11)) {
                 acquire_cam_servo.set(0.75);
                 System.out.println(acquire_cam_servo.get());
             }
             
-            if (driveStick1.getRawButton(9)) {
+            if (launchStick.getRawButton(9)) {
                 System.out.println("us: " + acquire_ultrasonic.getVoltage());
                 System.out.println("enc1: " + encoder_l.get());
                 System.out.println("enc2: " + encoder_r.get());
-            }
-            if (driveStick2.getRawButton(11)) {
-                var_power_shot += 0.01;
-                System.out.println("Changing variable shot to: " + var_power_shot);
-            } else if (driveStick2.getRawButton(10)) {
-                var_power_shot -= 0.01;
-                System.out.println("Changing variable shot to: " + var_power_shot);
             }
         } else if (our_state == State.GO_FETCH) {
             if (!go_fetch_pid.isEnable()) {
                 go_fetch_pid.enable();
                 System.out.println("Arf arf! Getting the ball!");
             }
-            if (!driveStick2.getRawButton(2)) {
+            if (!driveStick.getRawButton(2)) {
                 our_state = State.NORMAL;
             }
         }
