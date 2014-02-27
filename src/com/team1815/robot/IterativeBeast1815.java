@@ -51,8 +51,6 @@ public class IterativeBeast1815 extends IterativeRobot {
     //Autonomous only
     int hotCount = 0; //if reaches 10, target is hot and go to score
     int loopCount = 0; //makes sure goal is hot 9/10 times
-    Encoder autoEncoder_l = new Encoder(7, 8);
-    Encoder autoEncoder_r = new Encoder(13, 14);
     static int autonomousMove = State.GO_FORWARD;
     static int autonomousShoot = State.NOT_SHOT;
     
@@ -174,10 +172,10 @@ public class IterativeBeast1815 extends IterativeRobot {
         
         if (visionProcessor.autonomousPeriodic(null)) {
             if (loopCount <= 10 && ++hotCount >= 9) {
-                if (autoEncoder_l.getDistance() < DISTANCE && autoEncoder_r.getDistance() < DISTANCE) {
+                if (encoder_l.getDistance() < DISTANCE && encoder_r.getDistance() < DISTANCE) {
                     drive.drive(0.7, 0.0);
                 }
-                else if (autoEncoder_l.getDistance() >= DISTANCE && autoEncoder_r.getDistance() >= DISTANCE && 
+                else if (encoder_l.getDistance() >= DISTANCE && encoder_r.getDistance() >= DISTANCE && 
                         autonomousShoot == State.NOT_SHOT) {
                     shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
                     shooterThread.start();
