@@ -51,8 +51,10 @@ public class IterativeBeast1815 extends IterativeRobot {
     //Autonomous only
     int hotCount = 0; //if reaches 10, target is hot and go to score
     int loopCount = 0; //makes sure goal is hot 9/10 times
-    static int autonomousMove = State.GO_FORWARD;
+    static int autonomousMove = State.WAIT;
     static int autonomousShoot = State.NOT_SHOT;
+    static boolean failSafe = false;
+    AutonomousMove autoMove = new AutonomousMove();
     
     //guys a DoubleSolenoid might've been what we wanted
     Compressor compressor = new Compressor(1,1);   //Compressor Relay
@@ -174,6 +176,7 @@ public class IterativeBeast1815 extends IterativeRobot {
         visionProcessor.autonomousInit();
         network();
         encoders(true);
+        autoMove.start();
     }
 
     /**
@@ -181,7 +184,9 @@ public class IterativeBeast1815 extends IterativeRobot {
      */
     public void autonomousPeriodic() {   
         
-        if (visionProcessor.autonomousPeriodic()) {
+        if (visionProcessor.autonomousPeriodic() && !failSafe) {
+            if (autoMove != null)
+                autoMove.interrupt();
             if (loopCount <= 10 && ++hotCount >= 9) {
                 if (encoder_l.getDistance() < DISTANCE && encoder_r.getDistance() < DISTANCE) {
                     drive.drive(0.7, 0.0);
@@ -199,6 +204,18 @@ public class IterativeBeast1815 extends IterativeRobot {
                 loopCount = 0;
                 hotCount = 0;
             }
+        }
+        else if (autonomousMove == State.GO_FORWARD && failSafe) {
+            if (encoder_l.getDistance() < DISTANCE && encoder_r.getDistance() < DISTANCE) {
+                    drive.drive(0.7, 0.0);
+                }
+                else if (encoder_l.getDistance() >= DISTANCE && encoder_r.getDistance() >= DISTANCE && 
+                        autonomousShoot == State.NOT_SHOT) {
+                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
+                    shooterThread.start();
+                    drive.drive(0.0, 0.0);
+                    encoders(false);
+                }
         }
         
         /*if (autonomousMove == State.GO_FORWARD){
