@@ -113,7 +113,7 @@ public class VisionProcessor {
             
             //ColorImage image;                           // next 2 lines read image from flash on cRIO
             //image = new RGBImage("/testImage.jpg");		// get the sample image from the cRIO flash
-            BinaryImage thresholdImage = image.thresholdHSV(0, 255, 0, 255, 250, 255);   // keep only bright objects
+            BinaryImage thresholdImage = image.thresholdHSV(0, 255, 0, 255, 204, 255);   // keep only bright objects
             if (thresholdImage == null) {
                 System.out.println("thresholdImage is null");
                 return false;

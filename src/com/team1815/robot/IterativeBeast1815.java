@@ -98,6 +98,15 @@ public class IterativeBeast1815 extends IterativeRobot {
     int our_state = State.NORMAL;
     boolean shooter_is_busy = false;
     
+    private void resetAutoParams() {
+        hotCount = 0; //if reaches 10, target is hot and go to score
+        loopCount = 0; //makes sure goal is hot 9/10 times
+        autonomousMove = State.WAIT;
+        autonomousShoot = State.NOT_SHOT;
+        failSafe = false;
+        autoMove = new AutonomousMove();
+    }
+    
     private void stopAllPneumatics() {
         fast_shoot1_fwd.set(false);
         fast_shoot2_fwd.set(false);
@@ -169,7 +178,8 @@ public class IterativeBeast1815 extends IterativeRobot {
     }
     
     
-    public void autonomousInit() {
+    public void autonomousInit() {        
+        resetAutoParams();
         compressor.start();
         pickUpperControl.start();
         camera_light.setRaw(255);
@@ -187,9 +197,9 @@ public class IterativeBeast1815 extends IterativeRobot {
         
         try {
             if (visionProcessor.autonomousPeriodic() && !failSafe) {
-                if (autoMove != null)
-                    autoMove.interrupt();
                 if (loopCount <= 10 && ++hotCount >= 9) {
+                    if (autoMove != null)
+                        autoMove.interrupt();
                     if (encoder_l.getDistance() < DISTANCE && encoder_r.getDistance() < DISTANCE) {
                         drive.drive(0.7, 0.0);
                     }
@@ -212,25 +222,26 @@ public class IterativeBeast1815 extends IterativeRobot {
                 if (autoMove != null)
                     autoMove.interrupt();
                 if (encoder_l.getDistance() < DISTANCE && encoder_r.getDistance() < DISTANCE) {
-                        drive.drive(0.7, 0.0);
-                    }
-                    else if (encoder_l.getDistance() >= DISTANCE && encoder_r.getDistance() >= DISTANCE && 
-                            autonomousShoot == State.NOT_SHOT && (shooterThread == null || !shooterThread.isAlive())) {
-                        shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
-                        shooterThread.start();
-                        drive.drive(0.0, 0.0);
-                        encoders(false);
-                        autonomousShoot = State.SHOT_ONCE;
-                    }
+                    drive.drive(0.7, 0.0);
+                }
+                else if (encoder_l.getDistance() >= DISTANCE && encoder_r.getDistance() >= DISTANCE && 
+                        autonomousShoot == State.NOT_SHOT && (shooterThread == null || !shooterThread.isAlive())) {
+                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
+                    shooterThread.start();
+                    drive.drive(0.0, 0.0);
+                    encoders(false);
+                    autonomousShoot = State.SHOT_ONCE;
+                }
             }
         } catch (Exception e) {
             failSafe = true;
             autonomousMove = State.NORMAL;
         }
+        
         if (failSafe) {
             if (autoMove != null) autoMove.interrupt();
             if (encoder_l.getDistance() < DISTANCE && encoder_r.getDistance() < DISTANCE) {
-                        drive.drive(0.7, 0.0);
+                drive.drive(0.7, 0.0);
             }
             else if (encoder_l.getDistance() >= DISTANCE && encoder_r.getDistance() >= DISTANCE && 
                     autonomousShoot == State.NOT_SHOT && (shooterThread == null || !shooterThread.isAlive())) {
@@ -241,33 +252,6 @@ public class IterativeBeast1815 extends IterativeRobot {
                 autonomousShoot = State.SHOT_ONCE;
             }
         }
-        
-        /*if (autonomousMove == State.GO_FORWARD){
-            //move forward for 2-3s
-            drive.drive(0.7, 0.0);
-        }
-        else if (autonomousMove == State.NORMAL && (autonomousShoot == State.NOT_SHOT ||
-                autonomousShoot == State.SHOT_ONCE)) {
-            //stop and shoot
-            shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
-            shooterThread.start();
-            if (autonomousShoot == State.NOT_SHOT) autonomousShoot = State.SHOT_ONCE;
-            else if (autonomousShoot == State.SHOT_ONCE) autonomousShoot = State.SHOT_TWICE;
-            drive.drive(0.7, 0.0);
-        }*/
-     
-        /*loopCount++;
-        //checks image continuously until target is hot for at least 9/10 checks
-        if (visionProcessor.autonomousPeriodic(null)) {
-            if (loopCount <= 10 && ++hotCount >= 9) {
-                //score
-            }
-            else if (loopCount == 10 && ++hotCount < 9) {
-                //reset loopCount and hotCount for next check
-                loopCount = 0;
-                hotCount = 0;
-            }
-        }*/
     }
     
     public void teleopInit() {
