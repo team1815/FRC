@@ -40,7 +40,7 @@ public class IterativeBeast1815 extends IterativeRobot {
     final static double Ki = 0;
     final static double Kd = 0.05;
     //distance to go forward for autonomous
-    final static double DISTANCE = 100; //NEEDS TESTING
+    final static double DISTANCE = 4000; //NEEDS TESTING
     
     RobotDrive drive = new RobotDrive(1, 2, 3, 4);
     Joystick launchStick = new Joystick(1);
@@ -177,6 +177,7 @@ public class IterativeBeast1815 extends IterativeRobot {
         network();
         encoders(true);
         autoMove.start();
+        topGrabberControl.putUpNoMatterWhat();
     }
 
     /**
@@ -184,38 +185,61 @@ public class IterativeBeast1815 extends IterativeRobot {
      */
     public void autonomousPeriodic() {   
         
-        if (visionProcessor.autonomousPeriodic() && !failSafe) {
-            if (autoMove != null)
-                autoMove.interrupt();
-            if (loopCount <= 10 && ++hotCount >= 9) {
+        try {
+            if (visionProcessor.autonomousPeriodic() && !failSafe) {
+                if (autoMove != null)
+                    autoMove.interrupt();
+                if (loopCount <= 10 && ++hotCount >= 9) {
+                    if (encoder_l.getDistance() < DISTANCE && encoder_r.getDistance() < DISTANCE) {
+                        drive.drive(0.7, 0.0);
+                    }
+                    else if (encoder_l.getDistance() >= DISTANCE && encoder_r.getDistance() >= DISTANCE && 
+                            autonomousShoot == State.NOT_SHOT) {
+                        shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
+                        shooterThread.start();
+                        drive.drive(0.0, 0.0);
+                        encoders(false);
+                        autonomousShoot = State.SHOT_ONCE;
+                    }
+                }
+                else if (loopCount == 10 && ++hotCount < 9) {
+                    //reset loopCount and hotCount for next check
+                    loopCount = 0;
+                    hotCount = 0;
+                }
+            }
+            else if (autonomousMove == State.GO_FORWARD && failSafe) {
+                if (autoMove != null)
+                    autoMove.interrupt();
                 if (encoder_l.getDistance() < DISTANCE && encoder_r.getDistance() < DISTANCE) {
-                    drive.drive(0.7, 0.0);
-                }
-                else if (encoder_l.getDistance() >= DISTANCE && encoder_r.getDistance() >= DISTANCE && 
-                        autonomousShoot == State.NOT_SHOT) {
-                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
-                    shooterThread.start();
-                    drive.drive(0.0, 0.0);
-                    encoders(false);
-                }
+                        drive.drive(0.7, 0.0);
+                    }
+                    else if (encoder_l.getDistance() >= DISTANCE && encoder_r.getDistance() >= DISTANCE && 
+                            autonomousShoot == State.NOT_SHOT && (shooterThread == null || !shooterThread.isAlive())) {
+                        shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
+                        shooterThread.start();
+                        drive.drive(0.0, 0.0);
+                        encoders(false);
+                        autonomousShoot = State.SHOT_ONCE;
+                    }
             }
-            else if (loopCount == 10 && ++hotCount < 9) {
-                //reset loopCount and hotCount for next check
-                loopCount = 0;
-                hotCount = 0;
-            }
+        } catch (Exception e) {
+            failSafe = true;
+            autonomousMove = State.NORMAL;
         }
-        else if (autonomousMove == State.GO_FORWARD && failSafe) {
+        if (failSafe) {
+            if (autoMove != null) autoMove.interrupt();
             if (encoder_l.getDistance() < DISTANCE && encoder_r.getDistance() < DISTANCE) {
-                    drive.drive(0.7, 0.0);
-                }
-                else if (encoder_l.getDistance() >= DISTANCE && encoder_r.getDistance() >= DISTANCE && 
-                        autonomousShoot == State.NOT_SHOT) {
-                    shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
-                    shooterThread.start();
-                    drive.drive(0.0, 0.0);
-                    encoders(false);
-                }
+                        drive.drive(0.7, 0.0);
+            }
+            else if (encoder_l.getDistance() >= DISTANCE && encoder_r.getDistance() >= DISTANCE && 
+                    autonomousShoot == State.NOT_SHOT && (shooterThread == null || !shooterThread.isAlive())) {
+                shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
+                shooterThread.start();
+                drive.drive(0.0, 0.0);
+                encoders(false);
+                autonomousShoot = State.SHOT_ONCE;
+            }
         }
         
         /*if (autonomousMove == State.GO_FORWARD){

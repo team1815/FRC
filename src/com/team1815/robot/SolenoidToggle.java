@@ -39,6 +39,12 @@ class SolenoidToggle {
         rev.set(true);
         is_up = true;
     }
+    
+    void putDownNoMatterWhat() {
+        fwd.set(true);
+        rev.set(false);
+        is_up = false;
+    }
 
     double timeSince() {
         if (timer.get() > prevTime) {
