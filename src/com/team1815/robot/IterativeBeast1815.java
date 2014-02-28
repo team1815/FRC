@@ -196,7 +196,7 @@ public class IterativeBeast1815 extends IterativeRobot {
     public void autonomousPeriodic() {   
         
         try {
-            if (visionProcessor.autonomousPeriodic() && !failSafe) {
+            if (!failSafe && visionProcessor.autonomousPeriodic()) {
                 if (loopCount <= 10 && ++hotCount >= 9) {
                     if (autoMove != null)
                         autoMove.interrupt();
