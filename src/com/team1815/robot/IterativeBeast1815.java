@@ -269,7 +269,7 @@ public class IterativeBeast1815 extends IterativeRobot {
      * This function is called periodically during operator control
      */
     public void teleopPeriodic() {
-        if (ball_lim_switch.get()) {
+        if (!ball_lim_switch.get()) {
             pickUpperControl.putUpNoMatterWhat();
             Log.log("Limit switch hit");
         }
