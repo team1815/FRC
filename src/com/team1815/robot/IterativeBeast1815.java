@@ -41,6 +41,8 @@ public class IterativeBeast1815 extends IterativeRobot {
     final static double Kd = 0.05;
     //distance to go forward for autonomous
     final static double DISTANCE = 4000; //NEEDS TESTING
+    final static int LOOP_VALUE_AUTON = 50;
+    final static int HOT_COUNT = (int) (LOOP_VALUE_AUTON * 0.9);
     
     RobotDrive drive = new RobotDrive(1, 2, 3, 4);
     Joystick launchStick = new Joystick(1);
@@ -197,7 +199,7 @@ public class IterativeBeast1815 extends IterativeRobot {
         
         try {
             if (!failSafe && visionProcessor.autonomousPeriodic()) {
-                if (loopCount <= 10 && ++hotCount >= 9) {
+                if (loopCount <= LOOP_VALUE_AUTON && ++hotCount >= HOT_COUNT) {
                     if (autoMove != null)
                         autoMove.interrupt();
                     if (encoder_l.getDistance() < DISTANCE && encoder_r.getDistance() < DISTANCE) {
@@ -212,7 +214,7 @@ public class IterativeBeast1815 extends IterativeRobot {
                         autonomousShoot = State.SHOT_ONCE;
                     }
                 }
-                else if (loopCount == 10 && ++hotCount < 9) {
+                else if (loopCount == LOOP_VALUE_AUTON && ++hotCount < HOT_COUNT) {
                     //reset loopCount and hotCount for next check
                     loopCount = 0;
                     hotCount = 0;
@@ -310,6 +312,7 @@ public class IterativeBeast1815 extends IterativeRobot {
                 if (shooterThread == null || !shooterThread.isAlive()) {
                     shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, 1.0);
                     shooterThread.start();
+                    System.out.println(acquire_ultrasonic.getVoltage());
                 } else {
                     Log.log("No single hold shot.");
                 }
@@ -320,6 +323,8 @@ public class IterativeBeast1815 extends IterativeRobot {
                 if (shooterThread == null || !shooterThread.isAlive()) {
                     shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, .15);
                     shooterThread.start();
+                    System.out.println(acquire_ultrasonic.getVoltage());
+
                     Log.log("Single weak shot");
                 } else {
                     Log.log("No single weak shot.");
@@ -329,6 +334,7 @@ public class IterativeBeast1815 extends IterativeRobot {
                 if (shooterThread == null || !shooterThread.isAlive()) {
                     shooterThread = new ShooterThread(fast_shoot1_fwd, fast_shoot2_fwd, fast_shoot1_rev, fast_shoot2_rev, .20);
                     shooterThread.start();
+                    System.out.println(acquire_ultrasonic.getVoltage());
                     Log.log("Single medium shot");
                 } else {
                     Log.log("No single medium shot.");

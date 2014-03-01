@@ -31,7 +31,7 @@ public class VisionProcessor {
      */   
     
     //Camera constants used for distance calculation
-    final int Y_IMAGE_RES = 480;		//X Image resolution in pixels, should be 120, 240 or 480
+    final int Y_IMAGE_RES = 120;		//X Image resolution in pixels, should be 120, 240 or 480
     //final double VIEW_ANGLE = 49;		//Axis M1013
     //final double VIEW_ANGLE = 41.7;		//Axis 206 camera
     final double VIEW_ANGLE = 37.4;  //Axis M1011 camera
@@ -113,7 +113,7 @@ public class VisionProcessor {
             
             //ColorImage image;                           // next 2 lines read image from flash on cRIO
             //image = new RGBImage("/testImage.jpg");		// get the sample image from the cRIO flash
-            BinaryImage thresholdImage = image.thresholdHSV(0, 255, 0, 255, 204, 255);   // keep only bright objects
+            BinaryImage thresholdImage = image.thresholdHSV(0, 255, 0, 255, 215, 230);   // keep only bright objects
             if (thresholdImage == null) {
                 System.out.println("thresholdImage is null");
                 return false;
